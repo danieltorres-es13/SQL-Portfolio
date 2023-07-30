@@ -1,1 +1,228 @@
+####It is important to Extract, Transform and Load the Berkshire file (ETL)###
+USE berkshire;
+SELECT AVG(value), ticker, price_type
+FROM berkshire.mytable
+WHERE price_type = 'Adjusted'
+GROUP BY ticker;
 
+USE Berkshire;
+SELECT *
+FROM customer_details c 
+INNER JOIN account_dim a 
+ON c.customer_id = a.client_id
+INNER JOIN holdings_current h
+ON a.account_id=h.account_id
+INNER JOIN security_masterlist s 
+ON h.ticker=s.ticker 
+INNER JOIN mytable m 
+ON s.ticker=m.ticker 
+	WHERE h.ticker='SNOW'
+	ORDER BY h.ticker
+    LIMIT 100;
+    
+SELECT *
+FROM mytable
+WHERE ticker = 'K0';
+
+USE berkshire;
+SELECT *
+FROM berkshire.mytable
+WHERE price_type = 'Adjusted' AND
+	ticker IN ('AAPL','BAC','AXP','SNOW','VZ','KO') AND
+		date > '2022-08-15';
+
+SELECT *
+FROM mytable; 
+
+USE berkshire;
+SELECT date, ticker, value as p1, LAG(value, 1) OVER(
+														PARTITION BY ticker 
+                                                        ORDER BY date 
+													   ) as p0 
+FROM berkshire.mytable
+WHERE price_type = 'Adjusted' AND
+	ticker IN ('AAPL','BAC','AXP','SNOW','VZ','KO') AND 
+	date >= '2020-08-01'
+
+;
+****** 1 year returns *******
+USE berkshire;
+SELECT a.*, (p1-p0)/p0 as discrete_returns, ln(p1/p0) as cont_returns
+FROM 
+(
+SELECT date, ticker, value as p1, LAG(value, 1) OVER(
+														PARTITION BY ticker 
+                                                        ORDER BY date 
+													   ) as p0 
+FROM berkshire.mytable
+WHERE price_type = 'Adjusted' AND
+	ticker IN ('AAPL','BAC','AXP','SNOW','VZ','KO') AND 
+	date >= '2022-01-20'
+) a 
+;
+++++++++ overall returns since 2007 ***********  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+USE berkshire;
+SELECT a.*, (p1-p0)/p0 as discrete_returns, ln(p1/p0) as cont_returns
+FROM 
+(
+SELECT date, ticker, value as p1, LAG(value, 1) OVER(
+														PARTITION BY ticker 
+                                                        ORDER BY date 
+													   ) as p0 
+FROM berkshire.mytable
+WHERE price_type = 'Adjusted' AND
+	ticker IN ('AAPL','BAC','AXP','SNOW','VZ','KO') AND 
+	date >= '2007-01-03' 
+
+) a 
+;
+
++++++++++++++DATA SINCE LAST 3 YEARS++++++++++
+USE berkshire;
+CREATE VIEW de_view3 as
+SELECT a.*, (p1-p0)/p0 as discrete_returns, ln(p1/p0) as cont_returns
+FROM 
+(
+SELECT date, ticker, value as p1, LAG(value, 251) OVER(
+														PARTITION BY ticker 
+                                                        ORDER BY date 
+													   ) as p0 
+FROM berkshire.mytable
+WHERE price_type = 'Adjusted' AND
+	ticker IN ('AAPL','BAC','AXP','SNOW','VZ','KO') AND 
+	date BETWEEN '2020-02-03' AND '2023-02-03' 
+) a 
+;
+
+++++++++returns, SIGMA and risk_adj since last 3 years+++++++++
+SELECT v3.ticker, AVG(v3.discrete_returns) as mu, STD(v3.discrete_returns) as stand_dev,
+AVG(v3.discrete_returns)/STD(v3.discrete_returns) as risk_adj_ret
+FROM berkshire.de_view3 v3
+GROUP BY ticker
+;
+
+++++++++returns, SIGMA since last 3 years+++++++++
+SELECT v3.ticker, AVG(v3.discrete_returns) as mu, STD(v3.discrete_returns) as stand_dev
+FROM berkshire.de_view3 v3
+GROUP BY ticker
+;
+
+++++++Portafolio Return (6 assets) WITH STD since last 3 years+++++++++
+SELECT AVG(v3.discrete_returns) as mu, STD(v3.discrete_returns) as stand_dev
+FROM berkshire.de_view3 v3
+;
+
+++++++Portafolio Return (6 assets) last 5 year+++++++++
+USE berkshire;
+CREATE VIEW de_view5 as
+SELECT a.*, (p1-p0)/p0 as discrete_returns, ln(p1/p0) as cont_returns
+FROM 
+(
+SELECT date, ticker, value as p1, LAG(value, 251) OVER(
+														PARTITION BY ticker 
+                                                        ORDER BY date 
+													   ) as p0 
+FROM berkshire.mytable
+WHERE price_type = 'Adjusted' AND
+	ticker IN ('AAPL','BAC','AXP','SNOW','VZ','KO') AND 
+	date BETWEEN '2018-02-03' AND '2023-02-03' 
+) a 
+;
+
+++++++++returns, SIGMA and risk_adj since last 5 years+++++++++
+SELECT v5.ticker, AVG(v5.discrete_returns) as mu, STD(v5.discrete_returns) as stand_dev,
+AVG(v5.discrete_returns)/STD(v5.discrete_returns) as risk_adj_ret
+FROM berkshire.de_view5 v5
+GROUP BY ticker
+;
+
+++++++++returns, SIGMA since last 5 years+++++++++
+SELECT v5.ticker, AVG(v5.discrete_returns) as mu, STD(v5.discrete_returns) as stand_dev
+FROM berkshire.de_view5 v5
+GROUP BY ticker
+;
+
+++++++Portafolio Return (6 assets) WITH STD since last 5 years+++++++++
+SELECT AVG(v5.discrete_returns) as mu, STD(v5.discrete_returns) as stand_dev
+FROM berkshire.de_view5 v5
+;
+
+++++++Portafolio Return (6 assets) last year+++++++++
+USE berkshire;
+CREATE VIEW de_view1 as
+SELECT a.*, (p1-p0)/p0 as discrete_returns, ln(p1/p0) as cont_returns
+FROM 
+(
+SELECT date, ticker, value as p1, LAG(value, 1) OVER(
+														PARTITION BY ticker 
+                                                        ORDER BY date 
+													   ) as p0 
+FROM berkshire.mytable
+WHERE price_type = 'Adjusted' AND
+	ticker IN ('AAPL','BAC','AXP','SNOW','VZ','KO') AND 
+	date BETWEEN '2022-02-03' AND '2023-02-03' 
+) a 
+;
+USE Berkshire;
+DROP VIEW de_view1;
+
+++++++++returns, SIGMA and risk_adj since last year+++++++++
+SELECT v1.ticker, AVG(v1.discrete_returns) as mu, STD(v1.discrete_returns) as stand_dev,
+AVG(v1.discrete_returns)/STD(v1.discrete_returns) as risk_adj_ret
+FROM berkshire.de_view1 v1
+GROUP BY ticker
+;
+
+++++++++returns, SIGMA since last year+++++++++
+SELECT v1.ticker, AVG(v1.discrete_returns) as mu, STD(v1.discrete_returns) as stand_dev
+FROM berkshire.de_view1 v1
+GROUP BY ticker
+;
+
+++++++Portafolio Return (6 assets) WITH STD since last year+++++++++
+SELECT AVG(v1.discrete_returns) as mu, STD(v1.discrete_returns) as stand_dev
+FROM berkshire.de_view1 v1
+;
+
+++++++++Portfolio using 8 assets in the last 5 years+++++++
+USE berkshire;
+CREATE VIEW de_view5OK as
+SELECT a.*, (p1-p0)/p0 as discrete_returns, ln(p1/p0) as cont_returns
+FROM 
+(
+SELECT date, ticker, value as p1, LAG(value, 251) OVER(
+														PARTITION BY ticker 
+                                                        ORDER BY date 
+													   ) as p0 
+FROM berkshire.mytable
+WHERE price_type = 'Adjusted' AND
+	ticker IN ('AAPL','BAC','AXP','VZ','KO','GOOG', 'MSFT') AND 
+	date BETWEEN '2018-02-03' AND '2023-02-03' 
+) a 
+;
+
+++++++++returns, SIGMA and risk_adj since last 5 years 8 ASSETS+++++++++
+SELECT v5OK.ticker, AVG(v5OK.discrete_returns) as mu, STD(v5OK.discrete_returns) as stand_dev,
+AVG(v5OK.discrete_returns)/STD(v5OK.discrete_returns) as risk_adj_ret
+FROM berkshire.de_view5OK v5OK
+GROUP BY ticker
+;
+
+++++++++returns, SIGMA since last 5 years 8 ASSETS+++++++++
+SELECT v5OK.ticker, AVG(v5OK.discrete_returns) as mu, STD(v5OK.discrete_returns) as stand_dev
+FROM berkshire.de_view5OK v5OK
+GROUP BY ticker
+;
+
+++++++Portafolio Return (8 assets) WITH STD since last 5 years+++++++++
+SELECT AVG(v5OK.discrete_returns) as mu, STD(v5OK.discrete_returns) as stand_dev
+FROM berkshire.de_view5OK v5OK
+;
+
+USE berkshire;
+DROP VIEW de_view5OK;
+
+USE berkshire;
+SELECT *
+FROM mytable;
