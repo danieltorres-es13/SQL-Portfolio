@@ -1,4 +1,8 @@
-####It is important to Extract, Transform and Load the Berkshire file (ETL)###
+####Analysis of the most important assets in Berkshire Portfolio###############
+####AAPL, BAC, KO, AXP, VZ, SNOW are the tickers I´m analyzing#################
+####Comparing rates of returns for different periods for future decisions######
+####Risk Management utilizing SIGMA and RISK Adj###############################
+####It is important to Extract, Transform and Load the Berkshire file (ETL)####
 USE berkshire;
 SELECT AVG(value), ticker, price_type
 FROM berkshire.mytable
