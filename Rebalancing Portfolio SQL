@@ -1,0 +1,213 @@
+###Providing recommendations on rebalancing a Portfolio##########################################################################
+###What is the most recent 12M**, 18M, 24M (months) return for each of the securities (and for the entire portfolio)?############
+###What is the most recent 12M sigma (risk) for each of the securities (and for the entire portfolio)?###########################
+###Based on the previous 2 questions, which holdings would you sell, which holdings would you buy?###############################
+Are there any outside securities that you would recommend adding to the portfolio?###############################################
+###How will your portfolio risk and expected returns change after rebalancing (selling and buying) including any new security?###
+
+++++++++++To see how many assets do we have+++++++++++++
+USE invest;
+SELECT AVG(value), ticker, price_type
+FROM invest.test
+WHERE price_type = 'Adjusted'
+GROUP BY ticker;
+
+USE invest;
+SELECT *
+FROM test;
+
+USE invest;
+SELECT *
+FROM returns_12M;
+
+++++++12M++++++++
+USE invest;
+CREATE VIEW returns_12MOK as
+SELECT a.*, (p1-p0)/p0 as discrete_returns, ln(p1/p0) as cont_returns
+FROM 
+(
+SELECT date, ticker, value as p1, LAG(value, 251) OVER(
+														PARTITION BY ticker 
+                                                        ORDER BY date 
+													   ) as p0 
+FROM invest.test
+WHERE price_type = 'Adjusted' AND
+	ticker IN ('TSLA','SPY', 'IEF', 'GLD', 'AGG') AND 
+	date BETWEEN '2021-09-09' AND '2022-09-09' 
+) a
+;
+
+SELECT r.ticker, AVG(r.discrete_returns) as mu_discrete_returns, AVG(r.cont_returns) as mu_cont_returns
+FROM invest.returns_12MOK r
+GROUP BY ticker
+;
+
++++++18M++++++++
+USE invest;
+CREATE VIEW returns_18MOK2 as
+SELECT a.*, (p1-p0)/p0 as discrete_returns, ln(p1/p0) as cont_returns
+FROM 
+(
+SELECT date, ticker, value as p1, LAG(value, 251) OVER(
+														PARTITION BY ticker 
+                                                        ORDER BY date 
+													   ) as p0 
+FROM invest.test
+WHERE price_type = 'Adjusted' AND
+	ticker IN ('TSLA','SPY', 'IEF', 'GLD', 'AGG') AND 
+	date BETWEEN '2021-03-09' AND '2022-09-09' 
+) a
+;
+
+SELECT r18.ticker, AVG(r18.discrete_returns) as mu_discrete_returns, AVG(r18.cont_returns) as mu_cont_returns
+FROM invest.returns_18MOK2 r18
+GROUP BY ticker
+;
+
+++++++24M++++++
+USE invest;
+CREATE VIEW returns_24MOK as
+SELECT a.*, (p1-p0)/p0 as discrete_returns, ln(p1/p0) as cont_returns
+FROM 
+(
+SELECT date, ticker, value as p1, LAG(value, 251) OVER(
+														PARTITION BY ticker 
+                                                        ORDER BY date 
+													   ) as p0 
+FROM invest.test
+WHERE price_type = 'Adjusted' AND
+	ticker IN ('TSLA','SPY', 'IEF', 'GLD', 'AGG') AND 
+	date BETWEEN '2020-09-09' AND '2022-09-09' 
+) a
+;
+
+SELECT r24.ticker, AVG(r24.discrete_returns) as mu_discrete_returns, AVG(r24.cont_returns) as mu_cont_returns
+FROM invest.returns_24MOK r24
+GROUP BY ticker
+;
+
++++++all portafolio since we have data+++++
+USE invest;
+CREATE VIEW returns_allOK as
+SELECT a.*, (p1-p0)/p0 as discrete_returns, ln(p1/p0) as cont_returns
+FROM 
+(
+SELECT date, ticker, value as p1, LAG(value, 251) OVER(
+														PARTITION BY ticker 
+                                                        ORDER BY date 
+													   ) as p0 
+FROM invest.test
+WHERE price_type = 'Adjusted' AND
+	ticker IN ('TSLA','SPY', 'IEF', 'GLD', 'AGG') AND 
+	date BETWEEN '2017-01-03' AND '2022-09-09' 
+) a
+;
++++++++RETURN OF ALL PORTFOLIO (5 ASSETS) SINCE WE HAVE DATA++++++++++++
+SELECT AVG(rall.discrete_returns) as mu_discrete_returns, AVG(rall.cont_returns) as mu_cont_returns
+FROM invest.returns_allOK rall
+;
+
+USE invest;
+SELECT SUM(rall.discrete_returns) AS Portafolio_discrete_returns, SUM(rall.cont_returns) as Portafolio_cont_returns
+FROM invest.returns_allOK rall
+GROUP BY ticker;
+
++++++12M SIGMA ADDING RISK ADJ++++++++
+SELECT SIGMA.ticker, AVG(SIGMA.discrete_returns) as mu, STD(SIGMA.discrete_returns) as stand_dev,
+AVG(SIGMA.discrete_returns)/STD(SIGMA.discrete_returns) as risk_adj_ret
+FROM invest.returns_12MOK SIGMA
+GROUP BY ticker
+;
+
++++++++12M total assets (10M)++++++++
+USE invest;
+CREATE VIEW returns_12M as
+SELECT a.*, (p1-p0)/p0 as discrete_returns, ln(p1/p0) as cont_returns
+FROM 
+(
+SELECT date, ticker, value as p1, LAG(value, 251) OVER(
+														PARTITION BY ticker 
+                                                        ORDER BY date 
+													   ) as p0 
+FROM invest.test
+WHERE price_type = 'Adjusted' AND
+	ticker IN ('TSLA','SPY','C','SNOW','WFC','CRM', 'IEF', 'GLD', 'AGG', 'BABA') AND 
+	date BETWEEN '2021-09-09' AND '2022-09-09' 
+) a
+;
+
++++++12M Analysis adding SIGMA AND RISK ADJ TOTAL ASSETS (10 ASSETS)++++++++
+SELECT SIGMA.ticker, AVG(SIGMA.discrete_returns) as mu, STD(SIGMA.discrete_returns) as stand_dev,
+AVG(SIGMA.discrete_returns)/STD(SIGMA.discrete_returns) as risk_adj_ret
+FROM invest.returns_12M SIGMA
+GROUP BY ticker
+;
+
++++++++18M total assets (10M)++++++++
+USE invest;
+CREATE VIEW returns_18Mok as
+SELECT a.*, (p1-p0)/p0 as discrete_returns, ln(p1/p0) as cont_returns
+FROM 
+(
+SELECT date, ticker, value as p1, LAG(value, 251) OVER(
+														PARTITION BY ticker 
+                                                        ORDER BY date 
+													   ) as p0 
+FROM invest.test
+WHERE price_type = 'Adjusted' AND
+	ticker IN ('TSLA','SPY','C','SNOW','WFC','CRM', 'IEF', 'GLD', 'AGG', 'BABA') AND 
+	date BETWEEN '2020-09-09' AND '2022-09-09' 
+) a
+;
+
++++++18M Analysis adding SIGMA AND RISK ADJ TOTAL ASSETS (10 ASSETS)++++++++
+SELECT SIGMA.ticker, AVG(SIGMA.discrete_returns) as mu, STD(SIGMA.discrete_returns) as stand_dev,
+AVG(SIGMA.discrete_returns)/STD(SIGMA.discrete_returns) as risk_adj_ret
+FROM invest.returns_18Mok SIGMA
+GROUP BY ticker
+;
+
++++++24M Analysis adding SIGMA AND RISK ADJ TOTAL ASSETS (10 ASSETS)++++++++
+USE invest;
+CREATE VIEW returns_24M as
+SELECT a.*, (p1-p0)/p0 as discrete_returns, ln(p1/p0) as cont_returns
+FROM 
+(
+SELECT date, ticker, value as p1, LAG(value, 251) OVER(
+														PARTITION BY ticker 
+                                                        ORDER BY date 
+													   ) as p0 
+FROM invest.test
+WHERE price_type = 'Adjusted' AND
+	ticker IN ('TSLA','SPY','C','SNOW','WFC','CRM', 'IEF', 'GLD', 'AGG', 'BABA') AND 
+	date BETWEEN '2020-09-09' AND '2022-09-09' 
+) a
+;
+
++++++24M Analysis adding SIGMA AND RISK ADJ TOTAL ASSETS (10 ASSETS)++++++++
+SELECT SIGMA.ticker, AVG(SIGMA.discrete_returns) as mu, STD(SIGMA.discrete_returns) as stand_dev,
+AVG(SIGMA.discrete_returns)/STD(SIGMA.discrete_returns) as risk_adj_ret
+FROM invest.returns_24M SIGMA
+GROUP BY ticker
+;
+
+*++++BEST PORTAFOLIO+++++++
+USE invest;
+CREATE VIEW best_portfol2 as
+SELECT a.*, (p1-p0)/p0 as discrete_returns, ln(p1/p0) as cont_returns
+FROM 
+(
+SELECT date, ticker, value as p1, LAG(value, 251) OVER(
+														PARTITION BY ticker 
+                                                        ORDER BY date 
+													   ) as p0 
+FROM invest.test
+WHERE price_type = 'Adjusted' AND
+	ticker IN ('TSLA','SPY','WFC','GLD') AND 
+	date BETWEEN '2017-01-03' AND '2022-09-09' 
+) a
+;
+SELECT AVG(b2.discrete_returns) as mu_discrete_returns, STD(b2.discrete_returns) as stand_dev,
+AVG(b2.discrete_returns)/STD(b2.discrete_returns) as risk_adj_ret
+FROM invest.best_portfol2 b2
+
